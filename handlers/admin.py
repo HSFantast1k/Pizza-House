@@ -3,6 +3,8 @@ from aiogram.dispatcher.filters.state import State, StatesGroup
 from aiogram import types, Dispatcher
 from create_bot import dp, bot
 from aiogram.dispatcher.filters import Text
+from data_base import sqlite_db
+from keyboards import admin_kb
 
 ID = None
 
@@ -16,14 +18,14 @@ class FSMAdmin(StatesGroup):
 
 """
 Получаем ID текущего модератора
-@dp.message_handler(commands=['moderator'], is_chat_admin=True)
+@dp.message_handler(commands=['mod'], is_chat_admin=True)
 """
 
 
 async def make_changes_command(message: types.Message):
     global ID
     ID = message.from_user.id
-    await bot.send_message(message.from_user.id, 'Что хозяин надо???')  # , reply_markup=button_case_admin
+    await bot.send_message(message.from_user.id, 'Что хозяин надо???', reply_markup=admin_kb.button_case_admin)
     await message.delete()
 
 
@@ -108,8 +110,7 @@ async def load_price(message: types.Message, state: FSMContext):
     if message.from_user.id == ID:
         async with state.proxy() as date:
             date['price'] = float(message.text)
-        async with state.proxy() as date:
-            await message.reply(str(date))
+        await sqlite_db.sql_write(state)
         await state.finish()
 
 
@@ -122,4 +123,4 @@ def register_handlers_admin(dp: Dispatcher):
     dp.register_message_handler(load_name, state=FSMAdmin.name)
     dp.register_message_handler(load_description, state=FSMAdmin.description)
     dp.register_message_handler(load_price, state=FSMAdmin.price)
-    dp.register_message_handler(make_changes_command, commands=['moderator'], is_chat_admin=True)
+    dp.register_message_handler(make_changes_command, commands=['mod'], is_chat_admin=True)
